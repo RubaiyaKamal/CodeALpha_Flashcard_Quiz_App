@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard Quiz App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --lavender: #c084fc;
+      --peach:    #fb923c;
+      --mint:     #34d399;
+      --sky:      #38bdf8;
+      --rose:     #fb7185;
+      --yellow:   #fbbf24;
+
+      --bg-from:  #fde8ff;
+      --bg-to:    #e0f2fe;
+      --surface:  #ffffff;
+      --text:     #3b1f5e;
+      --text-muted: #9b8ab0;
+      --border:   #ede9fe;
+      --radius:   24px;
+      --bubble:   32px;
+    }
+
+    /* ── Animated pastel bg ── */
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 35%, #e0f2fe 65%, #dcfce7 100%);
+      background-size: 400% 400%;
+      animation: bgShift 12s ease infinite;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 16px 60px;
+      color: var(--text);
+    }
+
+    @keyframes bgShift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ── Floating blobs ── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+      animation: floatBlob 8s ease-in-out infinite alternate;
+    }
+    .blob-1 { width: 260px; height: 260px; background: #c084fc; top: -60px; left: -60px; animation-delay: 0s; }
+    .blob-2 { width: 200px; height: 200px; background: #fb923c; bottom: 40px; right: -40px; animation-delay: 2s; }
+    .blob-3 { width: 180px; height: 180px; background: #34d399; bottom: 120px; left: -30px; animation-delay: 4s; }
+
+    @keyframes floatBlob {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(20px, 30px) scale(1.08); }
+    }
+
+    /* ── Layout ── */
+    .app {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 620px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    /* ── Header ── */
+    header { text-align: center; }
+
+    header h1 {
+      font-size: 2.1rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a855f7, #ec4899, #f97316);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -1px;
+    }
+
+    header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      box-shadow: 0 2px 12px rgba(168,85,247,.15);
+      color: var(--text);
+      transition: transform 0.2s;
+    }
+
+    .stat-chip:hover { transform: scale(1.05); }
+    .stat-chip .icon { font-size: 1.1rem; }
+
+    /* ── Card wrapper ── */
+    .card-wrap {
+      width: 100%;
+      background: var(--surface);
+      border-radius: var(--bubble);
+      box-shadow: 0 8px 40px rgba(168,85,247,.18), 0 2px 8px rgba(0,0,0,.06);
+      padding: 32px 28px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* decorative top stripe */
+    .card-wrap::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, #a855f7, #ec4899, #f97316, #fbbf24, #34d399, #38bdf8);
+      background-size: 300% 100%;
+      animation: rainbowBar 4s linear infinite;
+    }
+
+    @keyframes rainbowBar {
+      0%   { background-position: 0% 0; }
+      100% { background-position: 300% 0; }
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      align-self: flex-start;
+    }
+
+    /* ── Flashcard flip ── */
+    .flashcard {
+      width: 100%;
+      perspective: 1000px;
+      cursor: pointer;
+      min-height: 190px;
+    }
+
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      min-height: 190px;
+      transition: transform 0.6s cubic-bezier(.4,0,.2,1);
+      transform-style: preserve-3d;
+    }
+
+    .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 24px;
+      text-align: center;
+      gap: 10px;
+    }
+
+    /* Rotating pastel gradients per card — set by JS via CSS var */
+    .card-front {
+      background: var(--card-grad, linear-gradient(135deg,#c084fc,#818cf8));
+      color: #fff;
+    }
+
+    .card-back {
+      background: linear-gradient(135deg, #34d399, #38bdf8);
+      color: #fff;
+      transform: rotateY(180deg);
+    }
+
+    .card-emoji  { font-size: 2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,.15)); }
+    .card-sublabel { font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.75; }
+    .card-text   { font-size: 1.25rem; font-weight: 700; line-height: 1.45; }
+    .card-hint   { font-size: 0.75rem; opacity: 0.65; margin-top: 4px; }
+
+    /* wiggle on load */
+    @keyframes wiggle {
+      0%,100% { transform: rotate(0deg); }
+      25%      { transform: rotate(-2deg); }
+      75%      { transform: rotate(2deg); }
+    }
+
+    .flashcard:not(.flipped):hover .flashcard-inner {
+      animation: wiggle 0.4s ease;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 40px 0 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .emoji { font-size: 3rem; }
+    .empty-state p { font-size: 0.95rem; }
+
+    /* ── Show answer button ── */
+    .btn-reveal {
+      background: linear-gradient(135deg, #a855f7, #ec4899);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 32px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(168,85,247,.4);
+      transition: transform 0.15s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-reveal:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 6px 24px rgba(168,85,247,.55); }
+    .btn-reveal:active { transform: scale(0.97); }
+
+    /* ── Dot indicators ── */
+    .dots {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 100%;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .dot.active   { background: #a855f7; transform: scale(1.35); }
+    .dot.seen     { background: #34d399; }
+
+    /* ── Navigation ── */
+    .nav-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .btn-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 2.5px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s, transform 0.12s, box-shadow 0.18s;
+      box-shadow: 0 2px 10px rgba(168,85,247,.10);
+    }
+
+    .btn-nav:not(:disabled):hover {
+      background: #f5f3ff;
+      border-color: #a855f7;
+      color: #7e22ce;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(168,85,247,.22);
+    }
+
+    .btn-nav:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ── Manage panel ── */
+    .panel {
+      width: 100%;
+      background: var(--surface);
+      border-radius: var(--bubble);
+      box-shadow: 0 8px 40px rgba(168,85,247,.12);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .panel-header h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-add {
+      background: linear-gradient(135deg, #a855f7, #ec4899);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 3px 12px rgba(168,85,247,.3);
+    }
+
+    .btn-add:hover { transform: translateY(-1px) scale(1.04); box-shadow: 0 5px 18px rgba(168,85,247,.45); }
+
+    /* ── Form ── */
+    .form-wrap {
+      padding: 20px 24px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: #fdf4ff;
+    }
+
+    .form-wrap.hidden { display: none; }
+
+    .form-row { display: flex; flex-direction: column; gap: 5px; }
+
+    .form-row label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #a855f7;
+    }
+
+    .form-row input,
+    .form-row textarea {
+      padding: 10px 14px;
+      border: 2.5px solid #ede9fe;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+      resize: vertical;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .form-row input:focus,
+    .form-row textarea:focus {
+      outline: none;
+      border-color: #a855f7;
+      box-shadow: 0 0 0 3px rgba(168,85,247,.15);
+    }
+
+    .form-actions { display: flex; gap: 8px; }
+
+    .btn-save {
+      background: linear-gradient(135deg,#a855f7,#ec4899);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 24px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 3px 12px rgba(168,85,247,.3);
+    }
+
+    .btn-save:hover { transform: scale(1.04); }
+
+    .btn-cancel {
+      background: transparent;
+      border: 2px solid var(--border);
+      border-radius: 999px;
+      padding: 9px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-cancel:hover { background: var(--border); }
+
+    /* ── Card list ── */
+    .card-list { max-height: 300px; overflow-y: auto; list-style: none; }
+
+    .card-list::-webkit-scrollbar { width: 5px; }
+    .card-list::-webkit-scrollbar-track { background: transparent; }
+    .card-list::-webkit-scrollbar-thumb { background: #e9d5ff; border-radius: 99px; }
+
+    .card-list-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 24px;
+      border-bottom: 1.5px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    .card-list-item:last-child { border-bottom: none; }
+    .card-list-item:hover { background: #fdf4ff; }
+    .card-list-item.active-edit { background: #f3e8ff; }
+
+    .card-list-item .num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,#a855f7,#ec4899);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .card-info { flex: 1; min-width: 0; }
+
+    .card-info .q {
+      font-weight: 700;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-info .a {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 5px 7px;
+      border-radius: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-icon:hover { background: #f3e8ff; transform: scale(1.15); }
+
+    /* ── Confetti canvas ── */
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(90px);
+      background: linear-gradient(135deg,#a855f7,#ec4899);
+      color: #fff;
+      padding: 11px 24px;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      pointer-events: none;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+      opacity: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(168,85,247,.4);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.6rem; }
+      .card-text { font-size: 1.05rem; }
+      .card-wrap { padding: 24px 16px 20px; }
+      .panel-header, .form-wrap, .card-list-item { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- Confetti canvas -->
+<canvas id="confettiCanvas"></canvas>
+
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <h1>Flashcard Quiz App</h1>
+    <p>Study smarter, one flip at a time ✨</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-chip"><span class="icon">🔥</span> Streak: <strong id="streakCount">0</strong></div>
+    <div class="stat-chip"><span class="icon">⭐</span> Seen: <strong id="seenCount">0</strong> / <strong id="totalCount">0</strong></div>
+    <div class="stat-chip"><span class="icon">🃏</span> Card: <strong id="cardIndex">—</strong></div>
+  </div>
+
+  <!-- Card area -->
+  <div class="card-wrap" id="cardWrap">
+
+    <!-- flashcard -->
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="flashcard-inner">
+        <div class="card-face card-front">
+          <span class="card-emoji" id="cardEmoji">🤔</span>
+          <span class="card-sublabel">Question</span>
+          <span class="card-text" id="questionText"></span>
+          <span class="card-hint">Tap to flip</span>
+        </div>
+        <div class="card-face card-back">
+          <span class="card-emoji">💡</span>
+          <span class="card-sublabel">Answer</span>
+          <span class="card-text" id="answerText"></span>
+          <span class="card-hint">Tap to flip back</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <span class="emoji">📭</span>
+      <p>No cards yet — add one below!</p>
+    </div>
+
+    <!-- Show answer button -->
+    <button class="btn-reveal" id="revealBtn" onclick="flipCard()">
+      🎉 Show Answer
+    </button>
+
+    <!-- Dot indicators -->
+    <div class="dots" id="dots"></div>
+
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-row">
+    <button class="btn-nav" id="prevBtn" onclick="navigate(-1)">← Previous</button>
+    <button class="btn-nav" id="nextBtn" onclick="navigate(1)">Next →</button>
+  </div>
+
+  <!-- Manage panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>📚 Manage Cards</h2>
+      <button class="btn-add" id="addToggleBtn" onclick="toggleForm()">+ Add Card</button>
+    </div>
+
+    <div class="form-wrap hidden" id="formWrap">
+      <div class="form-row">
+        <label for="inputQ">Question</label>
+        <textarea id="inputQ" rows="2" placeholder="What do you want to remember?"></textarea>
+      </div>
+      <div class="form-row">
+        <label for="inputA">Answer</label>
+        <textarea id="inputA" rows="2" placeholder="The answer is…"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" id="saveBtn" onclick="saveCard()">💾 Save</button>
+        <button class="btn-cancel" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+
+    <ul class="card-list" id="cardList"></ul>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Card gradient palette ──────────────────────────────────────────────────
+const GRADIENTS = [
+  'linear-gradient(135deg,#c084fc,#818cf8)',
+  'linear-gradient(135deg,#f472b6,#fb923c)',
+  'linear-gradient(135deg,#38bdf8,#34d399)',
+  'linear-gradient(135deg,#fbbf24,#f472b6)',
+  'linear-gradient(135deg,#a78bfa,#38bdf8)',
+  'linear-gradient(135deg,#fb7185,#fbbf24)',
+  'linear-gradient(135deg,#34d399,#a78bfa)',
+];
+
+const EMOJIS = ['🤔','💭','🧠','🌟','🎯','📖','💡','🔮','🌈','🦋'];
+
+// ── State ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'flashcards_v3';
+let cards = loadCards();
+let current = 0;
+let flipped = false;
+let editingIndex = -1;
+let seen = new Set();
+let streak = 0;
+
+function loadCards() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return defaultCards();
+}
+
+function saveStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)); }
+
+function defaultCards() {
+  return [
+    // General Knowledge
+    { q: 'What is the capital of France?', a: 'Paris 🗼' },
+    { q: 'Which planet is known as the Red Planet?', a: 'Mars 🔴' },
+    { q: 'How many continents are there on Earth?', a: '7 Continents 🌍' },
+    { q: 'What is the largest ocean in the world?', a: 'The Pacific Ocean 🌊' },
+    { q: 'Who painted the Mona Lisa?', a: 'Leonardo da Vinci 🎨' },
+
+    // Mathematics
+    { q: 'What is 7 × 8?', a: '56 🔢' },
+    { q: 'What is the value of π (Pi) to 2 decimal places?', a: '3.14 🥧' },
+    { q: 'What is the square root of 144?', a: '12 ✅' },
+    { q: 'How many sides does a hexagon have?', a: '6 sides ⬡' },
+    { q: 'What is 15% of 200?', a: '30 💯' },
+
+    // Science
+    { q: 'What does HTML stand for?', a: 'HyperText Markup Language 🌐' },
+    { q: 'What is the powerhouse of the cell?', a: 'The Mitochondria ⚡' },
+    { q: 'What gas do plants absorb from the atmosphere?', a: 'Carbon Dioxide (CO₂) 🌿' },
+    { q: 'What is the chemical symbol for Gold?', a: 'Au 🥇' },
+    { q: 'How many bones are in the adult human body?', a: '206 bones 🦴' },
+
+    // Literature & History
+    { q: 'Who wrote "Romeo and Juliet"?', a: 'William Shakespeare 🖊️' },
+    { q: 'In which year did World War II end?', a: '1945 🕊️' },
+    { q: 'Who was the first person to walk on the Moon?', a: 'Neil Armstrong 🌙' },
+
+    // Technology
+    { q: 'What does CPU stand for?', a: 'Central Processing Unit 💻' },
+    { q: 'What programming language is known as the language of the web?', a: 'JavaScript 🟨' },
+  ];
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  const has = cards.length > 0;
+
+  document.getElementById('flashcard').style.display   = has ? 'block' : 'none';
+  document.getElementById('emptyState').style.display  = has ? 'none' : 'flex';
+  document.getElementById('revealBtn').style.display   = (has && !flipped) ? 'flex' : 'none';
+  document.getElementById('prevBtn').disabled          = !has || current === 0;
+  document.getElementById('nextBtn').disabled          = !has || current === cards.length - 1;
+
+  // stats
+  document.getElementById('streakCount').textContent = streak;
+  document.getElementById('seenCount').textContent   = seen.size;
+  document.getElementById('totalCount').textContent  = cards.length;
+  document.getElementById('cardIndex').textContent   = has ? `${current + 1} / ${cards.length}` : '—';
+
+  if (has) {
+    const card = cards[current];
+    document.getElementById('questionText').textContent = card.q;
+    document.getElementById('answerText').textContent   = card.a;
+
+    // gradient & emoji per card
+    const grad  = GRADIENTS[current % GRADIENTS.length];
+    const emoji = EMOJIS[current % EMOJIS.length];
+    document.querySelector('.card-front').style.background = grad;
+    document.getElementById('cardEmoji').textContent = emoji;
+
+    const fc = document.getElementById('flashcard');
+    fc.classList.toggle('flipped', flipped);
+  }
+
+  renderDots();
+  renderList();
+}
+
+function renderDots() {
+  const container = document.getElementById('dots');
+  container.innerHTML = '';
+  cards.forEach((_, i) => {
+    const d = document.createElement('span');
+    d.className = 'dot' + (i === current ? ' active' : (seen.has(i) ? ' seen' : ''));
+    d.title = `Card ${i + 1}`;
+    d.onclick = () => goTo(i);
+    d.style.cursor = 'pointer';
+    container.appendChild(d);
+  });
+}
+
+function renderList() {
+  const ul = document.getElementById('cardList');
+  ul.innerHTML = '';
+  cards.forEach((card, i) => {
+    const li = document.createElement('li');
+    li.className = 'card-list-item' + (i === editingIndex ? ' active-edit' : '');
+    li.innerHTML = `
+      <div class="num">${i + 1}</div>
+      <div class="card-info">
+        <div class="q">${esc(card.q)}</div>
+        <div class="a">${esc(card.a)}</div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-icon" onclick="startEdit(${i})" title="Edit">✏️</button>
+        <button class="btn-icon" onclick="deleteCard(${i})" title="Delete">🗑️</button>
+      </div>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function goTo(index) {
+  if (index < 0 || index >= cards.length) return;
+  current = index;
+  flipped = false;
+  render();
+}
+
+function navigate(dir) { goTo(current + dir); }
+
+// ── Flip ───────────────────────────────────────────────────────────────────
+function flipCard() {
+  if (!cards.length) return;
+  flipped = !flipped;
+  if (flipped) {
+    seen.add(current);
+    streak++;
+    launchConfetti();
+  }
+  document.getElementById('revealBtn').style.display = flipped ? 'none' : 'flex';
+  document.getElementById('flashcard').classList.toggle('flipped', flipped);
+  render();
+}
+
+// ── Form ───────────────────────────────────────────────────────────────────
+function toggleForm(show) {
+  const wrap = document.getElementById('formWrap');
+  const btn  = document.getElementById('addToggleBtn');
+  const hidden = wrap.classList.contains('hidden');
+  show = (show === undefined) ? hidden : show;
+  if (show) {
+    wrap.classList.remove('hidden');
+    btn.textContent = '✕ Close';
+  } else {
+    wrap.classList.add('hidden');
+    btn.textContent = '+ Add Card';
+    clearForm();
+  }
+}
+
+function clearForm() {
+  document.getElementById('inputQ').value = '';
+  document.getElementById('inputA').value = '';
+  document.getElementById('saveBtn').textContent = '💾 Save';
+  editingIndex = -1;
+  renderList();
+}
+
+function cancelEdit() { toggleForm(false); }
+
+function saveCard() {
+  const q = document.getElementById('inputQ').value.trim();
+  const a = document.getElementById('inputA').value.trim();
+  if (!q || !a) { showToast('Fill in both question and answer! ✍️'); return; }
+
+  if (editingIndex >= 0) {
+    cards[editingIndex] = { q, a };
+    showToast('Card updated! ✅');
+  } else {
+    cards.push({ q, a });
+    current = cards.length - 1;
+    flipped = false;
+    showToast('Card added! 🎉');
+  }
+
+  saveStorage();
+  toggleForm(false);
+  render();
+}
+
+function startEdit(index) {
+  editingIndex = index;
+  document.getElementById('inputQ').value = cards[index].q;
+  document.getElementById('inputA').value = cards[index].a;
+  document.getElementById('saveBtn').textContent = '✏️ Update';
+  toggleForm(true);
+  document.getElementById('inputQ').focus();
+  renderList();
+}
+
+function deleteCard(index) {
+  if (!confirm(`Delete card #${index + 1}?\n"${cards[index].q}"`)) return;
+  cards.splice(index, 1);
+
+  const newSeen = new Set();
+  seen.forEach(i => { if (i < index) newSeen.add(i); else if (i > index) newSeen.add(i - 1); });
+  seen = newSeen;
+
+  if (current >= cards.length) current = Math.max(0, cards.length - 1);
+  flipped = false;
+  if (editingIndex === index) { editingIndex = -1; toggleForm(false); }
+
+  saveStorage();
+  render();
+  showToast('Card deleted 🗑️');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Confetti ───────────────────────────────────────────────────────────────
+(function () {
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx    = canvas.getContext('2d');
+  let pieces   = [];
+  let running  = false;
+
+  const COLORS = ['#a855f7','#ec4899','#f97316','#fbbf24','#34d399','#38bdf8','#fb7185'];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  function Piece() {
+    this.x  = Math.random() * canvas.width;
+    this.y  = -12;
+    this.r  = Math.random() * 7 + 4;
+    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    this.vx = (Math.random() - 0.5) * 4;
+    this.vy = Math.random() * 3 + 2;
+    this.angle  = Math.random() * Math.PI * 2;
+    this.spin   = (Math.random() - 0.5) * 0.2;
+    this.shape  = Math.random() < 0.5 ? 'circle' : 'rect';
+    this.alpha  = 1;
+  }
+
+  function drawPiece(p) {
+    ctx.save();
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle   = p.color;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+    if (p.shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+    }
+    ctx.restore();
+  }
+
+  function tick() {
+    if (!running) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.x     += p.vx;
+      p.y     += p.vy;
+      p.angle += p.spin;
+      p.vy    += 0.07;
+      if (p.y > canvas.height * 0.7) p.alpha -= 0.025;
+      drawPiece(p);
+    });
+    pieces = pieces.filter(p => p.alpha > 0);
+    if (pieces.length === 0) { running = false; ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    else requestAnimationFrame(tick);
+  }
+
+  window.launchConfetti = function () {
+    for (let i = 0; i < 80; i++) pieces.push(new Piece());
+    if (!running) { running = true; tick(); }
+  };
+})();
+
+// ── Keyboard shortcuts ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  if (e.key === 'ArrowLeft')              navigate(-1);
+  else if (e.key === 'ArrowRight')        navigate(1);
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+});
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
