@@ -487,6 +487,228 @@
 
     .btn-icon:hover { background: #f3e8ff; transform: scale(1.15); }
 
+    /* ── Judgment buttons ── */
+    .judge-row {
+      display: none;
+      gap: 12px;
+      justify-content: center;
+      animation: popIn 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    .judge-row.visible { display: flex; }
+
+    @keyframes popIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .btn-got-it {
+      background: linear-gradient(135deg,#34d399,#059669);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 11px 28px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(52,211,153,.4);
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    .btn-got-it:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 22px rgba(52,211,153,.55); }
+
+    .btn-missed {
+      background: linear-gradient(135deg,#fb7185,#ef4444);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 11px 28px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(251,113,133,.4);
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    .btn-missed:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 22px rgba(251,113,133,.55); }
+
+    /* ── Result Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(30,10,60,.55);
+      backdrop-filter: blur(6px);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 28px;
+      padding: 36px 32px 32px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(0,0,0,.22);
+      animation: slideUp 0.4s cubic-bezier(.34,1.56,.64,1);
+      position: relative;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(60px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .modal-trophy { font-size: 3.5rem; text-align: center; }
+
+    .modal h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      text-align: center;
+      background: linear-gradient(90deg,#a855f7,#ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 8px 0 4px;
+    }
+
+    .modal-tagline {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 22px;
+    }
+
+    /* Score circle */
+    .score-circle-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .score-circle {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: conic-gradient(#34d399 var(--pct), #f3e8ff var(--pct));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .score-circle::before {
+      content: '';
+      position: absolute;
+      width: 96px;
+      height: 96px;
+      background: #fff;
+      border-radius: 50%;
+    }
+
+    .score-inner {
+      position: relative;
+      text-align: center;
+    }
+
+    .score-pct {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--text);
+      display: block;
+      line-height: 1;
+    }
+
+    .score-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+
+    /* Tally row */
+    .tally-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .tally-chip {
+      flex: 1;
+      border-radius: 16px;
+      padding: 14px 10px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .tally-chip.correct { background: #dcfce7; color: #15803d; }
+    .tally-chip.missed  { background: #fee2e2; color: #b91c1c; }
+    .tally-chip.skipped { background: #fef9c3; color: #92400e; }
+
+    .tally-chip .tally-num { font-size: 1.6rem; display: block; }
+    .tally-chip .tally-lbl { font-size: 0.75rem; }
+
+    /* Review list */
+    .review-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .review-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+
+    .review-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--bg, #f0f4f8);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+    }
+
+    .review-item .ri-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .review-item .ri-q { font-weight: 700; }
+    .review-item .ri-a { color: var(--text-muted); margin-top: 2px; }
+
+    /* Modal buttons */
+    .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
+    .btn-restart {
+      background: linear-gradient(135deg,#a855f7,#ec4899);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(168,85,247,.35);
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    .btn-restart:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(168,85,247,.5); }
+
+    .btn-retry-missed {
+      background: linear-gradient(135deg,#fb7185,#ef4444);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(251,113,133,.35);
+      transition: transform 0.15s;
+    }
+
+    .btn-retry-missed:hover { transform: translateY(-2px); }
+    .btn-retry-missed:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
     /* ── Confetti canvas ── */
     #confettiCanvas {
       position: fixed;
@@ -545,7 +767,8 @@
   <!-- Stats -->
   <div class="stats-bar">
     <div class="stat-chip"><span class="icon">🔥</span> Streak: <strong id="streakCount">0</strong></div>
-    <div class="stat-chip"><span class="icon">⭐</span> Seen: <strong id="seenCount">0</strong> / <strong id="totalCount">0</strong></div>
+    <div class="stat-chip"><span class="icon">✅</span> Correct: <strong id="correctCount">0</strong></div>
+    <div class="stat-chip"><span class="icon">❌</span> Missed: <strong id="missedCount">0</strong></div>
     <div class="stat-chip"><span class="icon">🃏</span> Card: <strong id="cardIndex">—</strong></div>
   </div>
 
@@ -580,6 +803,12 @@
     <button class="btn-reveal" id="revealBtn" onclick="flipCard()">
       🎉 Show Answer
     </button>
+
+    <!-- Judgment buttons (visible after flip) -->
+    <div class="judge-row" id="judgeRow">
+      <button class="btn-got-it" onclick="markCard(true)">✅ Got it!</button>
+      <button class="btn-missed" onclick="markCard(false)">❌ Missed</button>
+    </div>
 
     <!-- Dot indicators -->
     <div class="dots" id="dots"></div>
@@ -619,6 +848,47 @@
 
 </div>
 
+<!-- Result Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-trophy" id="modalTrophy">🏆</div>
+    <h2 id="modalTitle">Quiz Complete!</h2>
+    <p class="modal-tagline" id="modalTagline">Here's how you did</p>
+
+    <div class="score-circle-wrap">
+      <div class="score-circle" id="scoreCircle">
+        <div class="score-inner">
+          <span class="score-pct" id="scorePct">0%</span>
+          <span class="score-label">Score</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tally-row">
+      <div class="tally-chip correct">
+        <span class="tally-num" id="tallyCorrect">0</span>
+        <span class="tally-lbl">✅ Correct</span>
+      </div>
+      <div class="tally-chip missed">
+        <span class="tally-num" id="tallyMissed">0</span>
+        <span class="tally-lbl">❌ Missed</span>
+      </div>
+      <div class="tally-chip skipped">
+        <span class="tally-num" id="tallySkipped">0</span>
+        <span class="tally-lbl">⏭️ Skipped</span>
+      </div>
+    </div>
+
+    <p class="review-title" id="reviewTitle"></p>
+    <ul class="review-list" id="reviewList"></ul>
+
+    <div class="modal-actions">
+      <button class="btn-restart" onclick="restartQuiz()">🔄 Restart All Cards</button>
+      <button class="btn-retry-missed" id="retryMissedBtn" onclick="retryMissed()">🔁 Retry Missed Cards</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -642,8 +912,10 @@ let cards = loadCards();
 let current = 0;
 let flipped = false;
 let editingIndex = -1;
-let seen = new Set();
-let streak = 0;
+let seen     = new Set();
+let correct  = new Set();
+let missed   = new Set();
+let streak   = 0;
 
 function loadCards() {
   try {
@@ -699,11 +971,16 @@ function render() {
   document.getElementById('prevBtn').disabled          = !has || current === 0;
   document.getElementById('nextBtn').disabled          = !has || current === cards.length - 1;
 
+  // judgment buttons: show after flip, hide if already judged
+  const judgeRow = document.getElementById('judgeRow');
+  const alreadyJudged = correct.has(current) || missed.has(current);
+  judgeRow.classList.toggle('visible', has && flipped && !alreadyJudged);
+
   // stats
-  document.getElementById('streakCount').textContent = streak;
-  document.getElementById('seenCount').textContent   = seen.size;
-  document.getElementById('totalCount').textContent  = cards.length;
-  document.getElementById('cardIndex').textContent   = has ? `${current + 1} / ${cards.length}` : '—';
+  document.getElementById('streakCount').textContent  = streak;
+  document.getElementById('correctCount').textContent = correct.size;
+  document.getElementById('missedCount').textContent  = missed.size;
+  document.getElementById('cardIndex').textContent    = has ? `${current + 1} / ${cards.length}` : '—';
 
   if (has) {
     const card = cards[current];
@@ -729,7 +1006,11 @@ function renderDots() {
   container.innerHTML = '';
   cards.forEach((_, i) => {
     const d = document.createElement('span');
-    d.className = 'dot' + (i === current ? ' active' : (seen.has(i) ? ' seen' : ''));
+    let cls = 'dot';
+    if (i === current)      cls += ' active';
+    else if (correct.has(i)) { cls += ' seen'; d.style.background = '#34d399'; }
+    else if (missed.has(i))  { cls += ' seen'; d.style.background = '#fb7185'; }
+    d.className = cls;
     d.title = `Card ${i + 1}`;
     d.onclick = () => goTo(i);
     d.style.cursor = 'pointer';
@@ -778,7 +1059,6 @@ function flipCard() {
   flipped = !flipped;
   if (flipped) {
     seen.add(current);
-    streak++;
     launchConfetti();
   }
   document.getElementById('revealBtn').style.display = flipped ? 'none' : 'flex';
@@ -857,6 +1137,114 @@ function deleteCard(index) {
   saveStorage();
   render();
   showToast('Card deleted 🗑️');
+}
+
+// ── Score / Judgment ───────────────────────────────────────────────────────
+function markCard(isCorrect) {
+  if (isCorrect) {
+    correct.add(current);
+    missed.delete(current);
+    streak++;
+    showToast('Nice one! ✅');
+  } else {
+    missed.add(current);
+    correct.delete(current);
+    streak = 0;
+    showToast('Keep studying! 💪');
+  }
+
+  // auto-advance or finish
+  const judged = correct.size + missed.size;
+  if (judged >= cards.length) {
+    setTimeout(() => showResultModal(), 600);
+  } else {
+    setTimeout(() => {
+      const next = current + 1 < cards.length ? current + 1 : 0;
+      goTo(next);
+    }, 400);
+  }
+
+  render();
+}
+
+function showResultModal() {
+  const total   = cards.length;
+  const cor     = correct.size;
+  const mis     = missed.size;
+  const skipped = total - cor - mis;
+  const pct     = total ? Math.round((cor / total) * 100) : 0;
+
+  // trophy & title by score
+  let trophy, title, tagline;
+  if (pct === 100)      { trophy = '🏆'; title = 'Perfect Score!';    tagline = 'Outstanding! You aced every card!'; }
+  else if (pct >= 80)   { trophy = '🥇'; title = 'Excellent!';         tagline = 'Great job — almost there!'; }
+  else if (pct >= 60)   { trophy = '🥈'; title = 'Good Effort!';       tagline = 'Solid work — keep practising!'; }
+  else if (pct >= 40)   { trophy = '🥉'; title = 'Keep Going!';         tagline = 'You\'re making progress!'; }
+  else                  { trophy = '📚'; title = 'Need More Study!';    tagline = 'Review the missed cards and try again!'; }
+
+  document.getElementById('modalTrophy').textContent   = trophy;
+  document.getElementById('modalTitle').textContent    = title;
+  document.getElementById('modalTagline').textContent  = tagline;
+  document.getElementById('scorePct').textContent      = pct + '%';
+  document.getElementById('tallyCorrect').textContent  = cor;
+  document.getElementById('tallyMissed').textContent   = mis;
+  document.getElementById('tallySkipped').textContent  = skipped;
+  document.getElementById('retryMissedBtn').disabled   = mis === 0;
+
+  // conic gradient for score ring
+  document.getElementById('scoreCircle').style.setProperty('--pct', `${pct}%`);
+
+  // missed cards review list
+  const reviewList  = document.getElementById('reviewList');
+  const reviewTitle = document.getElementById('reviewTitle');
+  reviewList.innerHTML = '';
+
+  const missedArr  = [...missed].map(i => ({ ...cards[i], verdict: 'missed' }));
+  const correctArr = [...correct].map(i => ({ ...cards[i], verdict: 'correct' }));
+  const all = [...missedArr, ...correctArr];
+
+  if (all.length) {
+    reviewTitle.textContent = mis > 0 ? `Cards to review (${mis} missed)` : 'All cards answered correctly!';
+    all.forEach(card => {
+      const li = document.createElement('li');
+      li.className = 'review-item';
+      li.innerHTML = `
+        <span class="ri-icon">${card.verdict === 'correct' ? '✅' : '❌'}</span>
+        <div>
+          <div class="ri-q">${esc(card.q)}</div>
+          <div class="ri-a">${esc(card.a)}</div>
+        </div>`;
+      reviewList.appendChild(li);
+    });
+  }
+
+  document.getElementById('modalOverlay').classList.add('open');
+  if (pct === 100) setTimeout(launchConfetti, 300);
+}
+
+function restartQuiz() {
+  correct.clear();
+  missed.clear();
+  seen.clear();
+  streak  = 0;
+  current = 0;
+  flipped = false;
+  document.getElementById('modalOverlay').classList.remove('open');
+  render();
+}
+
+function retryMissed() {
+  if (missed.size === 0) return;
+  const missedCards = [...missed].map(i => cards[i]);
+  cards   = missedCards;
+  correct.clear();
+  missed.clear();
+  seen.clear();
+  streak  = 0;
+  current = 0;
+  flipped = false;
+  document.getElementById('modalOverlay').classList.remove('open');
+  render();
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
